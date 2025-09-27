@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText } from 'lucide-react';
+import { Upload, FileText, Loader2 } from 'lucide-react';
+import { processResumeFile } from '@/utils/api';
 
 const IntervieweeView = () => {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,13 +16,36 @@ const IntervieweeView = () => {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
       setResumeFile(file);
+      await processResumeFileInternal(file);
     } else {
       alert('Please select a valid PDF file.');
       event.target.value = '';
+    }
+  };
+
+  const processResumeFileInternal = async (file: File) => {
+    setIsProcessing(true);
+    try {
+      const result = await processResumeFile(file);
+      
+      if (result.success && result.data) {
+        setFormData({
+          name: result.data.name || '',
+          email: result.data.email || '',
+          phone: result.data.phone || ''
+        });
+      } else {
+        throw new Error(result.message || 'Failed to process resume');
+      }
+    } catch (error) {
+      console.error('Error processing resume:', error);
+      alert(`Error processing resume: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -61,9 +86,17 @@ const IntervieweeView = () => {
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessing}
                 className="w-full h-24 border-2 border-dashed border-gray-300 hover:border-gray-400 flex flex-col items-center justify-center space-y-2"
               >
-                {resumeFile ? (
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+                    <span className="text-sm text-blue-600 font-medium">
+                      Processing resume...
+                    </span>
+                  </>
+                ) : resumeFile ? (
                   <>
                     <FileText className="h-8 w-8 text-green-600" />
                     <span className="text-sm text-green-600 font-medium truncate max-w-full px-2">
@@ -80,6 +113,11 @@ const IntervieweeView = () => {
                 )}
               </Button>
             </div>
+            {resumeFile && !isProcessing && (
+              <p className="text-sm text-blue-600 text-center">
+                ✨ Resume processed! Information auto-filled below.
+              </p>
+            )}
           </div>
 
           {/* Personal Information Fields */}
@@ -92,8 +130,8 @@ const IntervieweeView = () => {
                 placeholder="Enter your full name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                disabled={!resumeFile}
-                className={!resumeFile ? 'bg-gray-100 cursor-not-allowed' : ''}
+                disabled={!resumeFile || isProcessing}
+                className={!resumeFile || isProcessing ? 'bg-gray-100 cursor-not-allowed' : ''}
               />
             </div>
 
@@ -105,8 +143,8 @@ const IntervieweeView = () => {
                 placeholder="Enter your email address"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                disabled={!resumeFile}
-                className={!resumeFile ? 'bg-gray-100 cursor-not-allowed' : ''}
+                disabled={!resumeFile || isProcessing}
+                className={!resumeFile || isProcessing ? 'bg-gray-100 cursor-not-allowed' : ''}
               />
             </div>
 
@@ -118,8 +156,8 @@ const IntervieweeView = () => {
                 placeholder="Enter your phone number"
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
-                disabled={!resumeFile}
-                className={!resumeFile ? 'bg-gray-100 cursor-not-allowed' : ''}
+                disabled={!resumeFile || isProcessing}
+                className={!resumeFile || isProcessing ? 'bg-gray-100 cursor-not-allowed' : ''}
               />
             </div>
           </div>
@@ -138,9 +176,9 @@ const IntervieweeView = () => {
             Start Interview
           </Button>
 
-          {!resumeFile && (
+          {!resumeFile && !isProcessing && (
             <p className="text-sm text-gray-500 text-center mt-4">
-              Please upload your resume to enable the form fields
+              Please upload your resume to automatically fill in your information
             </p>
           )}
         </CardContent>
