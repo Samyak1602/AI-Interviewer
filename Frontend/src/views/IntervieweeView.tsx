@@ -1,36 +1,150 @@
+import { useState, useRef } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Upload, FileText } from 'lucide-react';
+
 const IntervieweeView = () => {
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setResumeFile(file);
+    } else {
+      alert('Please select a valid PDF file.');
+      event.target.value = '';
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const isFormValid = resumeFile && formData.name && formData.email && formData.phone;
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Welcome to Your Interview
-        </h2>
-        <p className="text-lg text-gray-600 mb-8">
-          Get ready for an AI-powered interview experience
-        </p>
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+      <Card className="w-full max-w-lg shadow-xl">
+        <CardHeader className="text-center pb-6">
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            AI Full Stack Developer Interview
+          </CardTitle>
+          <CardDescription className="text-gray-600 mt-2">
+            Please upload your resume and provide your details to begin
+          </CardDescription>
+        </CardHeader>
         
-        <div className="bg-white shadow rounded-lg p-8">
-          <div className="space-y-6">
-            <div className="text-left">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Interview Instructions
-              </h3>
-              <ul className="list-disc list-inside space-y-2 text-gray-600">
-                <li>Ensure you have a stable internet connection</li>
-                <li>Find a quiet environment for the interview</li>
-                <li>Have your camera and microphone ready</li>
-                <li>Be prepared to answer questions about your experience</li>
-              </ul>
-            </div>
-            
-            <div className="border-t pt-6">
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                Start Interview
-              </button>
+        <CardContent className="space-y-6 px-6 pb-6">
+          {/* Resume Upload Section */}
+          <div className="space-y-2">
+            <Label htmlFor="resume">Resume (PDF only)</Label>
+            <div className="relative">
+              <Input
+                id="resume"
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                ref={fileInputRef}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-24 border-2 border-dashed border-gray-300 hover:border-gray-400 flex flex-col items-center justify-center space-y-2"
+              >
+                {resumeFile ? (
+                  <>
+                    <FileText className="h-8 w-8 text-green-600" />
+                    <span className="text-sm text-green-600 font-medium truncate max-w-full px-2">
+                      {resumeFile.name}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 text-gray-400" />
+                    <span className="text-sm text-gray-500">
+                      Click to upload your resume
+                    </span>
+                  </>
+                )}
+              </Button>
             </div>
           </div>
-        </div>
-      </div>
+
+          {/* Personal Information Fields */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                disabled={!resumeFile}
+                className={!resumeFile ? 'bg-gray-100 cursor-not-allowed' : ''}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email address"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                disabled={!resumeFile}
+                className={!resumeFile ? 'bg-gray-100 cursor-not-allowed' : ''}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Enter your phone number"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                disabled={!resumeFile}
+                className={!resumeFile ? 'bg-gray-100 cursor-not-allowed' : ''}
+              />
+            </div>
+          </div>
+
+          {/* Start Interview Button */}
+          <Button
+            className="w-full mt-6"
+            disabled={!isFormValid}
+            onClick={() => {
+              if (isFormValid) {
+                console.log('Starting interview with:', { resumeFile, formData });
+                // TODO: Handle interview start logic
+              }
+            }}
+          >
+            Start Interview
+          </Button>
+
+          {!resumeFile && (
+            <p className="text-sm text-gray-500 text-center mt-4">
+              Please upload your resume to enable the form fields
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
