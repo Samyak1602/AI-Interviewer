@@ -2,6 +2,7 @@ import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import resumeRouter from './routes/resume';
+import interviewRouter from './routes/interview';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // API Routes
 app.use('/api/resume', resumeRouter);
+app.use('/api/interview', interviewRouter);
 
 // Routes
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -38,7 +40,13 @@ app.get('/', (_req: Request, res: Response) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
-      resume: '/api/resume/extract-info'
+      resume: '/api/resume/extract-info',
+      interview: {
+        start: '/api/interview/start',
+        nextQuestion: '/api/interview/next-question',
+        submit: '/api/interview/submit',
+        summarize: '/api/interview/summarize'
+      }
     }
   });
 });

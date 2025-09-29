@@ -3,10 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Loader2 } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle } from 'lucide-react';
 import { processResumeFile } from '@/utils/api';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { startInterview } from '@/store/chatSlice';
+import ChatInterface from '@/components/chat/ChatInterface';
 
 const IntervieweeView = () => {
+  const dispatch = useAppDispatch();
+  const { isInterviewStarted } = useAppSelector((state) => state.chat);
+  
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
@@ -14,6 +20,7 @@ const IntervieweeView = () => {
     email: '',
     phone: ''
   });
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +64,91 @@ const IntervieweeView = () => {
   };
 
   const isFormValid = resumeFile && formData.name && formData.email && formData.phone;
+
+  const handleStartInterview = () => {
+    if (isFormValid) {
+      setShowConfirmation(true);
+    }
+  };
+
+  const handleConfirmStart = () => {
+    dispatch(startInterview({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone
+    }));
+  };
+
+  // If interview has started, show chat interface
+  if (isInterviewStarted) {
+    return <ChatInterface />;
+  }
+
+  // If showing confirmation, show confirmation screen
+  if (showConfirmation) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+        <Card className="w-full max-w-lg shadow-xl">
+          <CardHeader className="text-center pb-6">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Ready to Start?
+            </CardTitle>
+            <CardDescription className="text-gray-600 mt-2">
+              Please confirm your details before we begin the interview
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-6 px-6 pb-6">
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div>
+                <span className="font-medium text-gray-700">Name: </span>
+                <span className="text-gray-900">{formData.name}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Email: </span>
+                <span className="text-gray-900">{formData.email}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Phone: </span>
+                <span className="text-gray-900">{formData.phone}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Resume: </span>
+                <span className="text-gray-900">{resumeFile?.name}</span>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h4 className="font-medium text-blue-900 mb-2">Interview Format:</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Multiple technical questions of varying difficulty</li>
+                <li>• Each question has a time limit based on complexity</li>
+                <li>• Easy: 20 seconds, Medium: 60 seconds, Hard: 120 seconds</li>
+                <li>• Your answers will be evaluated in real-time</li>
+              </ul>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmation(false)}
+                className="flex-1"
+              >
+                Edit Details
+              </Button>
+              <Button
+                onClick={handleConfirmStart}
+                className="flex-1"
+              >
+                Start Interview
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
@@ -166,14 +258,9 @@ const IntervieweeView = () => {
           <Button
             className="w-full mt-6"
             disabled={!isFormValid}
-            onClick={() => {
-              if (isFormValid) {
-                console.log('Starting interview with:', { resumeFile, formData });
-                // TODO: Handle interview start logic
-              }
-            }}
+            onClick={handleStartInterview}
           >
-            Start Interview
+            Continue to Interview
           </Button>
 
           {!resumeFile && !isProcessing && (
